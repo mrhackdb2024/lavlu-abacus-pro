@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lavlu Abacus Pro - সরোবান (Ultimate)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    /* Custom styles for the abacus beads and frame */
+    .abacus-frame { background: #8b5a2b; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    html.dark .abacus-frame { background: #654321; }
+    .abacus-board { background: #f1e6d6; }
+    html.dark .abacus-board { background: #4a3a2a; }
+    .rail { background: #c68b47; }
+    html.dark .rail { background: #9d6b38; }
+    .bead { background: #d18b50; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: transform 220ms ease, background-color 220ms ease; }
+    html.dark .bead { background: #a0522d; }
+    .bead.active { background: #f3c27b; }
+    html.dark .bead.active { background: #e6a75a; }
+    .bead.upper.active { transform: translateY(24px); }
+    .bead.lower.active { transform: translateY(-24px); }
+    .history-table .correct { color: #16a34a; }
+    html.dark .history-table .correct { color: #4ade80; }
+    .history-table .wrong { color: #dc2626; }
+    html.dark .history-table .wrong { color: #f87171; }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
+
+  <div class="container mx-auto p-4 md:p-6">
+    <header class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Lavlu Abacus Pro</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">একটি সম্পূর্ণ ইন্টারেক্টিভ। লাভলু অ্যবাকাস টিউটোরিয়াল ও অনুশীলন অ্যাপ।</p>
+    </header>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- Abacus -->
+      <div class="flex-shrink-0 mx-auto">
+        <div class="abacus-frame p-3 rounded-lg">
+          <div id="board" class="abacus-board p-3 rounded-md flex items-start"></div>
+        </div>
+      </div>
+
+      <!-- Control Panel -->
+      <div class="flex-1 min-w-0 space-y-4">
+        <!-- Current Value Display -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-500 dark:text-slate-400">Current Value</h2>
+                    <div id="value" class="text-3xl font-bold text-slate-900 dark:text-white mt-1">0</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-slate-500">রড সংখ্যা: <span id="rodCountDisplay" class="font-semibold">12</span></div>
+                    <div class="text-xs text-slate-500">ডানদিক = একক</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md space-y-3">
+            <h3 class="font-semibold text-lg">Settings</h3>
+            <div class="flex items-center gap-2">
+                <label for="rodInput" class="text-sm">রড:</label>
+                <input id="rodInput" type="number" min="6" max="30" value="12" class="w-20 p-2 bg-slate-100 dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+                <button id="applyRods" class="px-3 py-2 text-sm font-semibold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-md transition">Apply</button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button id="clearBtn" class="px-3 py-2 text-sm font-semibold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-md transition">Clear</button>
+                <button id="darkModeToggle" class="px-3 py-2 text-sm font-semibold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-md transition">Theme 🌗</button>
+                <button id="downloadHtml" class="px-3 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition">Download HTML</button>
+                <button id="downloadZip" class="px-3 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition">Download ZIP</button>
+            </div>
+        </div>
+
+        <!-- Tutorials -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md space-y-3">
+            <h3 class="font-semibold text-lg">অপারেশন ও টিউটোরিয়াল</h3>
+            <div class="flex flex-wrap gap-2">
+                <button data-demo="add" class="demo-btn px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md transition">যোগ (৩ + ৪)</button>
+                <button data-demo="sub" class="demo-btn px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md transition">বিয়োগ (১২ - ৭)</button>
+                <button data-demo="mul" class="demo-btn px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md transition">গুণ (১২ × ৩৪)</button>
+                <button data-demo="div" class="demo-btn px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md transition">ভাগ (১৪৪ ÷ ১২)</button>
+                <button data-demo="sqrt" class="demo-btn px-3 py-2 text-sm font-bold bg-yellow-100 dark:bg-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-700 rounded-md transition text-yellow-800 dark:text-yellow-200">বর্গমূল (√২২৫)</button>
+            </div>
+            <div id="tutorialBox" class="bg-yellow-50 dark:bg-slate-700 border-l-4 border-yellow-400 dark:border-yellow-500 p-3 rounded-r-md mt-3" style="display:none">
+                <div id="tutorialStep" class="font-semibold text-yellow-800 dark:text-yellow-300"></div>
+                <div id="tutorialText" class="text-sm text-yellow-700 dark:text-yellow-400 mt-1"></div>
+            </div>
+        </div>
+
+        <!-- Practice -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md space-y-3">
+            <h3 class="font-semibold text-lg">Mental Math Practice</h3>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center gap-4">
+                    <label class="text-sm font-medium">লেভেল: 
+                        <select id="difficultyLevel" class="p-2 bg-slate-100 dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-green-500 outline-none">
+                            <option value="easy">সহজ</option>
+                            <option value="medium" selected>মধ্যম</option>
+                            <option value="hard">কঠিন</option>
+                        </select>
+                    </label>
+                    <div class="text-sm font-medium">High Score: <span id="highScore" class="font-bold text-green-600 dark:text-green-400">0</span></div>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <span class="text-sm font-medium">অপারেশন:</span>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="ops" value="add" class="practice-ops rounded" checked> যোগ</label>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="ops" value="sub" class="practice-ops rounded" checked> বিয়োগ</label>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="ops" value="mul" class="practice-ops rounded" checked> গুণ</label>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="ops" value="div" class="practice-ops rounded" checked> ভাগ</label>
+                </div>
+                <button id="startPractice" class="w-full px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition">Start Practice</button>
+            </div>
+            <div id="practiceArea" class="space-y-3 pt-2" style="display:none">
+                <div class="flex justify-between items-center">
+                    <div class="text-lg">প্রশ্ন: <span id="qText" class="font-bold"></span></div>
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">Time: <span id="timerText">15</span>s</div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input id="answerInput" type="number" class="w-full p-2 bg-slate-100 dark:bg-slate-700 rounded-md border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="তোমার উত্তর...">
+                    <button id="submitAnswer" class="px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition">Submit</button>
+                </div>
+                <div class="text-sm font-semibold">Score: <span id="scoreText">0</span> / <span id="attemptText">0</span></div>
+            </div>
+             <div id="historyArea" class="pt-3" style="display:none;">
+                <h4 class="font-semibold text-md">Recent History</h4>
+                <div class="overflow-x-auto">
+                    <table class="history-table w-full mt-2 text-sm text-left">
+                        <thead class="bg-slate-50 dark:bg-slate-700"><tr><th class="p-2">প্রশ্ন</th><th class="p-2">তোমার উত্তর</th><th class="p-2">সঠিক উত্তর</th><th class="p-2">ফলাফল</th></tr></thead>
+                        <tbody id="historyBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips and Code Snippet -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md space-y-3">
+            <h3 class="font-semibold text-lg">শিক্ষকের টিপস (Tips)</h3>
+            <ul class="list-disc list-inside text-sm text-slate-600 dark:text-slate-300 space-y-1">
+                <li>উপরের দানা = 5, নিচের প্রতিটি দানা = 1।</li>
+                <li>এক রডে 6–9 করার সময় উপরের 5 ব্যবহার করে নিচের দানাগুলো যোগ/বিয়োগ করো (overflow কৌশল)।</li>
+                <li>গুণ ও ভাগের ক্ষেত্রে আমরা Long multiplication / long division স্ট্র্যাটেজি ব্যবহার করছি — প্রতিটি ধাপ বাংলা ব্যাখ্যা সহ দেখানো হবে।</li>
+            </ul>
+            <h4 class="font-semibold text-md pt-2">কোড টুকরা (সংক্ষিপ্ত)</h4>
+            <pre class="bg-slate-100 dark:bg-slate-700 p-2 rounded text-xs text-slate-500">// রড সংখ্যা পরিবর্তন, ডেমো অপারেশন এবং প্র্যাকটিস মোডের জন্য লজিক এখানে আছে।</pre>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Soroban Logic and State ---
+    let RODS = 12;
+    const model = [];
+    let animationQueue = [];
+    let animating = false;
+    let audioCtx; // For sound effects
+
+    // --- DOM Element References ---
+    const board = document.getElementById('board');
+    const valueEl = document.getElementById('value');
+    const rodInput = document.getElementById('rodInput');
+    const rodCountDisplay = document.getElementById('rodCountDisplay');
+    const tutorialBox = document.getElementById('tutorialBox');
+    const tutorialStep = document.getElementById('tutorialStep');
+    const tutorialText = document.getElementById('tutorialText');
+
+    // --- Sound Effects ---
+    function playClickSound() {
+        if (!audioCtx) {
+            try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+            catch(e) { console.error("Web Audio API is not supported in this browser"); return; }
+        }
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.05);
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.05);
+    }
+
+    // --- Core Abacus Functions (init, render, compute) ---
+    function init() {
+        RODS = parseInt(rodInput.value, 10) || 12;
+        rodCountDisplay.textContent = RODS;
+        board.innerHTML = '';
+        model.length = 0;
+        for (let i = 0; i < RODS; i++) {
+            const rodIndex = i;
+            const rod = document.createElement('div');
+            rod.className = 'w-12 p-1 flex flex-col items-center mx-1';
+            
+            const upperBox = document.createElement('div');
+            upperBox.className = 'h-20 flex flex-col justify-end';
+            const upperBead = document.createElement('div');
+            upperBead.className = 'bead upper w-10 h-7 rounded-full cursor-pointer';
+            upperBox.appendChild(upperBead);
+
+            const rail = document.createElement('div');
+            rail.className = 'rail h-1.5 w-full rounded-full my-2';
+            
+            const lowerBox = document.createElement('div');
+            lowerBox.className = 'h-32 flex flex-col justify-start';
+            for (let j = 0; j < 4; j++) {
+                const b = document.createElement('div');
+                b.className = 'bead lower w-10 h-7 rounded-full cursor-pointer my-1';
+                b.addEventListener('click', () => { if (!animating) { model[rodIndex].lower[j] = !model[rodIndex].lower[j]; playClickSound(); render(); }});
+                lowerBox.appendChild(b);
+            }
+            
+            upperBead.addEventListener('click', () => { if (!animating) { model[rodIndex].upper = !model[rodIndex].upper; playClickSound(); render(); }});
+            rod.append(upperBox, rail, lowerBox);
+            board.appendChild(rod);
+            model.push({ upper: false, lower: new Array(4).fill(false) });
+        }
+        render();
+    }
+
+    function render() {
+        const rods = board.querySelectorAll('.w-12');
+        rods.forEach((rodEl, i) => {
+            if (!model[i]) return;
+            rodEl.querySelector('.bead.upper').classList.toggle('active', model[i].upper);
+            rodEl.querySelectorAll('.bead.lower').forEach((el, idx) => { el.classList.toggle('active', model[i].lower[idx]); });
+        });
+        valueEl.textContent = computeValue().toLocaleString('bn-BD');
+    }
+
+    function computeValue() {
+        return model.reduce((sum, state, i) => {
+            const place = 10 ** i;
+            let rodValue = (state.upper ? 5 : 0) + state.lower.filter(b => b).length;
+            return sum + rodValue * place;
+        }, 0);
+    }
+    
+    function setNumber(num) {
+        const s = String(Math.abs(Math.floor(num))).split('').reverse();
+        for (let i = 0; i < RODS; i++) {
+            if (!model[i]) continue;
+            const digit = i < s.length ? parseInt(s[i], 10) : 0;
+            const r = model[i];
+            r.upper = digit >= 5;
+            let rem = digit % 5;
+            r.lower.fill(false);
+            for(let j=0; j<rem; j++) r.lower[j] = true;
+        }
+    }
+
+    // --- Animation System ---
+    function showTutorial(title, text) { tutorialBox.style.display = 'block'; tutorialStep.textContent = title || ''; tutorialText.textContent = text || ''; }
+    function hideTutorial() { tutorialBox.style.display = 'none'; }
+    function pushStep(fn, delay = 900, title = '', text = '') { animationQueue.push({ fn, delay, title, text }); if (!animating) runQueue(); }
+    async function runQueue() {
+        animating = true;
+        document.querySelectorAll('button, input, select').forEach(b => b.disabled = true);
+        while (animationQueue.length) {
+            const step = animationQueue.shift();
+            if (step.title || step.text) showTutorial(step.title, step.text);
+            step.fn();
+            playClickSound();
+            render();
+            await new Promise(r => setTimeout(r, step.delay));
+        }
+        hideTutorial();
+        animating = false;
+        document.querySelectorAll('button, input, select').forEach(b => b.disabled = false);
+    }
+    
+    // --- Event Listeners for Controls ---
+    document.getElementById('applyRods').addEventListener('click', () => { init(); hideTutorial(); });
+    document.getElementById('clearBtn').addEventListener('click', () => { if(animating) return; animationQueue = []; setNumber(0); render(); hideTutorial(); });
+    document.getElementById('darkModeToggle').addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); });
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); }
+
+    // --- Demo Logic ---
+    const demos = {
+        add: () => { pushStep(()=>{setNumber(0);}, 200); pushStep(()=>{ setNumber(3); }, 700, 'ধাপ ১: ৩ বসানো'); pushStep(()=>{}, 500, 'ধাপ ২: ৪ যোগ করা হবে'); pushStep(()=>{ setNumber(7); }, 700, 'চূড়ান্ত ফল ৭'); },
+        sub: () => { pushStep(()=>{setNumber(0)}, 200); pushStep(()=>{ setNumber(12); }, 700, 'ধাপ ১: ১২ বসানো'); pushStep(()=>{}, 1200, 'কৌশল: -৭ = -১০ + ৩'); pushStep(()=>{ setNumber(2); }, 900, 'ধাপ ৩: ১০ বিয়োগ'); pushStep(()=>{ setNumber(5); }, 900, 'ধাপ ৪: ৩ যোগ'); pushStep(()=>{}, 800, 'সমাপ্তি: ফল ৫'); },
+        mul: () => { const a = 12, b = 34; pushStep(()=>{ setNumber(0); }, 300, 'শুরু', `আমরা ${a} × ${b} গুণ করে দেখাব।`); let cumulative = 0; let digit = 4; let partial = a * digit; cumulative += partial; pushStep(()=>{ setNumber(cumulative); }, 1000, `ধাপ ১: ${a} × ${digit} = ${partial}`); digit = 3; let shiftedPartial = a * digit * 10; cumulative += shiftedPartial; pushStep(()=>{ setNumber(cumulative); }, 1200, `ধাপ ২: যোগ ${shiftedPartial}`, `পূর্বের ফলের সাথে ${shiftedPartial} যোগ হলো।`); pushStep(()=>{}, 1500,'সমাপ্তি', `${a} × ${b} = ${a*b}।`); },
+        div: () => { const dividend = 144, divisor = 12; pushStep(()=>{ setNumber(0); }, 300, 'শুরু', `${dividend} ÷ ${divisor}`); pushStep(()=>{ setNumber(dividend); }, 1000, 'ভাজ্য সেট'); pushStep(()=>{}, 1500, 'ধাপ ১: 14 ÷ 12 ≈ 1'); let remainder = 14 - 1*12; pushStep(()=>{ setNumber(remainder); }, 1500, `বিয়োগ, ভাগশেষ ${remainder}`); let currentPortion = remainder*10+4; pushStep(()=>{ setNumber(currentPortion); }, 1500, 'ধাপ ২: নতুন ভাজ্য 24'); remainder = currentPortion - 2*12; pushStep(()=>{ setNumber(remainder); }, 1500, `বিয়োগ, ভাগশেষ ${remainder}`); pushStep(()=>{ setNumber(12); }, 1500, 'চূড়ান্ত ভাগফল', `ভাগফল = 12।`); },
+        sqrt: () => {
+            const num = 225;
+            pushStep(()=>setNumber(0), 300, 'শুরু', `আমরা ${num} এর বর্গমূল (√${num}) নির্ণয় করব।`);
+            pushStep(()=>setNumber(num), 1000, 'ধাপ ১: সংখ্যা সেট', `প্রথমে ${num} সংখ্যাটিকে অ্যাবাকাসে সেট করা হলো।`);
+            pushStep(()=>setNumber(2), 1500, 'ধাপ ২: গ্রুপ করা', `ডান দিক থেকে দুই ঘর করে গ্রুপ করি (২ ২৫)। প্রথম গ্রুপটি হলো ২।`);
+            pushStep(()=>setNumber(1), 1500, 'ধাপ ৩: প্রথম বর্গ বিয়োগ', `সবচেয়ে বড় কোন সংখ্যার বর্গ ২ এর সমান বা ছোট? উত্তর ১ (১*১=১)। ১ বিয়োগ করি। ভাগশেষ ১।`);
+            pushStep(()=>setNumber(125), 1500, 'ধাপ ৪: পরের গ্রুপ নামানো', `পরের গ্রুপ (২৫) নামানো হলো। নতুন সংখ্যা হলো ১২৫।`);
+            pushStep(()=>setNumber(20), 1500, 'ধাপ ৫: ভাজক নির্ণয়', `ফলাফলের প্রথম অংক (১) কে দ্বিগুণ করি (২)। এটি হবে নতুন ভাজকের দশকের অংক।`);
+            pushStep(()=>setNumber(125), 1500, 'ধাপ ৬: শেষ অংক খোঁজা', `এখন এমন একটি সংখ্যা 'ক' খুঁজতে হবে যেন (২০+ক) × ক ≤ ১২৫ হয়। এখানে ক = ৫ হলে ২৫ × ৫ = ১২৫।`);
+            pushStep(()=>setNumber(0), 1500, 'ধাপ ৭: চূড়ান্ত বিয়োগ', `১২৫ থেকে ১২৫ বিয়োগ করা হলো। ভাগশেষ ০।`);
+            pushStep(()=>setNumber(15), 1800, 'ফলাফল', `ফলাফলের অংকগুলো হলো ১ এবং ৫। সুতরাং, √${num} = ১৫।`);
+        }
+    };
+    document.querySelectorAll('.demo-btn').forEach(btn => btn.addEventListener('click', (e) => { if(animating) return; animationQueue = []; demos[e.target.dataset.demo](); }));
+
+    // --- Practice Mode Logic ---
+    const practiceElements = {
+        level: document.getElementById('difficultyLevel'),
+        highScore: document.getElementById('highScore'),
+        opsCheckboxes: document.querySelectorAll('.practice-ops'),
+        startBtn: document.getElementById('startPractice'),
+        area: document.getElementById('practiceArea'),
+        qText: document.getElementById('qText'),
+        answerInput: document.getElementById('answerInput'),
+        submitBtn: document.getElementById('submitAnswer'),
+        scoreText: document.getElementById('scoreText'),
+        attemptText: document.getElementById('attemptText'),
+        timerText: document.getElementById('timerText'),
+        historyArea: document.getElementById('historyArea'),
+        historyBody: document.getElementById('historyBody')
+    };
+    const difficultySettings = {
+        easy:   { range: 10, time: 20 },
+        medium: { range: 25, time: 15 },
+        hard:   { range: 50, time: 10 }
+    };
+    let practiceState = { score: 0, attempt: 0, currentQ: null, level: 'medium', history: [] };
+    let highScores = JSON.parse(localStorage.getItem('sorobanHighScores')) || { easy: 0, medium: 0, hard: 0 };
+    let timerId = null;
+    
+    function updateHighScoreDisplay() {
+        const level = practiceElements.level.value;
+        practiceElements.highScore.textContent = highScores[level] || 0;
+    }
+
+    practiceElements.level.addEventListener('change', updateHighScoreDisplay);
+
+    practiceElements.startBtn.addEventListener('click', () => {
+        const selectedOps = Array.from(practiceElements.opsCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+        if (selectedOps.length === 0) {
+            alert('অনুগ্রহ করে অন্তত একটি অপারেশন (যোগ, বিয়োগ, গুণ, ভাগ) নির্বাচন করুন।');
+            return;
+        }
+        clearInterval(timerId);
+        Object.assign(practiceState, { score: 0, attempt: 0, history: [], level: practiceElements.level.value, selectedOps });
+        practiceElements.area.style.display = 'block';
+        practiceElements.historyArea.style.display = 'block';
+        practiceElements.scoreText.textContent = '0';
+        practiceElements.attemptText.textContent = '0';
+        renderHistory();
+        nextPracticeQ();
+    });
+
+    function nextPracticeQ() {
+        clearInterval(timerId);
+        const settings = difficultySettings[practiceState.level];
+        const op = practiceState.selectedOps[Math.floor(Math.random() * practiceState.selectedOps.length)];
+        let a = Math.ceil(Math.random() * settings.range), b = Math.ceil(Math.random() * settings.range);
+
+        if (op === 'sub' && a < b) [a, b] = [b, a];
+        if (op === 'mul') { a = Math.ceil(Math.random() * 10) + 1; b = Math.ceil(Math.random() * 9); }
+        if (op === 'div') {
+            const divisor = Math.ceil(Math.random() * 9) + 1; 
+            const quotient = Math.ceil(Math.random() * Math.floor(settings.range/divisor));
+            a = divisor * quotient;
+            b = divisor;
+        }
+        
+        const operations = {
+            add: { text: `${a} + ${b}`, answer: a + b },
+            sub: { text: `${a} - ${b}`, answer: a - b },
+            mul: { text: `${a} × ${b}`, answer: a * b },
+            div: { text: `${a} ÷ ${b}`, answer: a / b },
+        };
+        practiceState.currentQ = operations[op];
+        practiceElements.qText.textContent = practiceState.currentQ.text;
+        practiceElements.answerInput.value = '';
+        practiceElements.answerInput.focus();
+        startTimer(settings.time);
+    }
+    
+    function startTimer(duration) {
+        let timeLeft = duration;
+        practiceElements.timerText.textContent = timeLeft;
+        timerId = setInterval(() => {
+            timeLeft--;
+            practiceElements.timerText.textContent = timeLeft;
+            if (timeLeft < 0) handleAnswerSubmission(true);
+        }, 1000);
+    }
+
+    function handleAnswerSubmission(isTimeout = false) {
+        clearInterval(timerId);
+        const userAns = isTimeout ? null : parseInt(practiceElements.answerInput.value, 10);
+        const isCorrect = userAns === practiceState.currentQ.answer;
+
+        practiceState.attempt++;
+        if (isCorrect) practiceState.score++;
+
+        if (practiceState.score > highScores[practiceState.level]) {
+            highScores[practiceState.level] = practiceState.score;
+            localStorage.setItem('sorobanHighScores', JSON.stringify(highScores));
+            updateHighScoreDisplay();
+        }
+        
+        practiceState.history.push({
+            q: practiceState.currentQ.text,
+            user: isTimeout ? 'সময় শেষ' : (isNaN(userAns) ? '-' : userAns),
+            correct: practiceState.currentQ.answer,
+            isCorrect: isCorrect
+        });
+        
+        renderHistory();
+        practiceElements.scoreText.textContent = practiceState.score;
+        practiceElements.attemptText.textContent = practiceState.attempt;
+        nextPracticeQ();
+    }
+
+    practiceElements.submitBtn.addEventListener('click', () => handleAnswerSubmission(false));
+    practiceElements.answerInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAnswerSubmission(false); });
+
+    function renderHistory() {
+        practiceElements.historyBody.innerHTML = '';
+        practiceState.history.slice(-5).reverse().forEach(item => {
+            const row = practiceElements.historyBody.insertRow();
+            row.innerHTML = `
+                <td class="p-2">${item.q}</td>
+                <td class="p-2">${item.user}</td>
+                <td class="p-2">${item.correct}</td>
+                <td class="p-2 font-bold ${item.isCorrect ? 'correct' : 'wrong'}">${item.isCorrect ? 'সঠিক' : 'ভুল'}</td>
+            `;
+        });
+    }
+
+    // --- Download Logic (HTML and ZIP) ---
+    document.getElementById('downloadHtml').addEventListener('click', () => {
+        const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+        triggerDownload(blob, 'soroban-abacus.html');
+    });
+    
+    document.getElementById('downloadZip').addEventListener('click', () => {
+        if (typeof JSZip === 'undefined') { alert('JSZip library could not be loaded. Please check your internet connection.'); return; }
+        const zip = new JSZip();
+        zip.file("soroban-abacus.html", document.documentElement.outerHTML);
+        zip.generateAsync({ type: "blob" }).then(blob => { triggerDownload(blob, 'soroban-abacus.zip'); });
+    });
+
+    function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    // --- Initial Load ---
+    init();
+    updateHighScoreDisplay();
+  </script>
+</body>
+</html>
+
